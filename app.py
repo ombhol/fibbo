@@ -108,14 +108,17 @@ for i, (ticker, symbol) in enumerate(zip(ticker_list, idx_tickers)):
             fib_val = float(latest[fib_name])
             if abs(close_price - fib_val) / fib_val <= fibo_tolerance:
                 near_fib = True
-                closest_fib_name = fib_name.replace("Fib_", "")
+                # Perbaikan 1: Konversi "382" menjadi float lalu dibagi 10 agar jadi 38.2
+                angka_fibo = float(fib_name.replace("Fib_", "")) / 10
+                closest_fib_name = f"{angka_fibo:.1f}"
                 break
                 
         # Jika memenuhi salah satu sinyal teknikal
         if near_fib or latest['Bullish_Engulfing']:
             results.append({
                 "Emiten": ticker,
-                "Harga Terakhir": round(close_price, 2),
+                # Perbaikan 2: Konversi ke integer (bilangan bulat) agar tidak ada koma panjang
+                "Harga Terakhir": int(round(close_price, 0)),
                 "Dekat Fibo": f"{closest_fib_name}%" if near_fib else "Tidak",
                 "Bullish Engulfing": "Ya" if latest['Bullish_Engulfing'] else "Tidak",
                 "Vol Drying (VPA)": "Ya" if latest['Vol_Drying'] else "Tidak",
