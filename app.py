@@ -15,7 +15,7 @@ st.markdown("Screener khusus untuk memindai saham yang mendekati level Fibonacci
 
 # === SIDEBAR PENGATURAN ===
 st.sidebar.header("Parameter Screener")
-default_tickers = "ACES, ADRO, AKRA, ANTM, AUTO, BRIS, BRMS, BSDE, CMRY, CPIN, CTRA, ELSA, ERAA, EXCL, HEAL, HRUM, ICBP, INDF, INKP, INTP, ITMG, JPFA, JSMR, KLBF, LSIP, MAPI, MDKA, MEDC "
+default_tickers = "ACES, ADRO, AKRA, ANTM, AUTO, BRIS, BRMS, BSDE, CMRY, CPIN, CTRA, ELSA, ENRG, ERAA, EXCL, HEAL, HRUM, ICBP, INDY, INDF, INKP, INTP, ITMG, JPFA, JSMR, KLBF, LSIP, MAPI, MDKA, MEDC, MIKA, MNCN, MTEL, PGAS, POWR, PTBA, PWON, SIDO, SMGR, SRTG, SSIA, TAPG, TKIM, TLKM, TPIA, UNTR, UNVR, BUMI"
 tickers_input = st.sidebar.text_input("Daftar Emiten (pisahkan dengan koma):", default_tickers)
 period = st.sidebar.selectbox("Periode Data:", ["1y", "6mo", "2y"], index=0)
 fibo_tolerance = st.sidebar.slider("Toleransi Kedekatan dgn Fibo (%)", 1.0, 5.0, 3.0) / 100.0
