@@ -5,6 +5,7 @@ import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import warnings
+import time  # <-- Tambahan wajib untuk fitur jeda waktu (anti-ban)
 warnings.filterwarnings('ignore')
 
 st.set_page_config(page_title="IDX Technical Screener", layout="wide", page_icon="📈")
@@ -14,7 +15,7 @@ st.markdown("Screener khusus untuk memindai saham yang mendekati level Fibonacci
 
 # === SIDEBAR PENGATURAN ===
 st.sidebar.header("Parameter Screener")
-default_tickers = "TLKM, BBCA, BBRI, BMRI, ASII, PGAS, SIDO, AUTO, POWR"
+default_tickers = "ACES, ADRO, AKRA, ANTM, AUTO, BRIS, BRMS, BSDE, CMRY, CPIN, CTRA, ELSA, ERAA, EXCL, HEAL, HRUM, ICBP, INDF, INKP, INTP, ITMG, JPFA, JSMR, KLBF, LSIP, MAPI, MDKA, MEDC "
 tickers_input = st.sidebar.text_input("Daftar Emiten (pisahkan dengan koma):", default_tickers)
 period = st.sidebar.selectbox("Periode Data:", ["1y", "6mo", "2y"], index=0)
 fibo_tolerance = st.sidebar.slider("Toleransi Kedekatan dgn Fibo (%)", 1.0, 5.0, 3.0) / 100.0
@@ -79,11 +80,19 @@ st.write(f"Menganalisis **{len(ticker_list)}** saham... Silakan tunggu.")
 results = []
 all_data = {}
 
-# === PROSES SCREENING ===
-for ticker, symbol in zip(ticker_list, idx_tickers):
+# === PROSES SCREENING (DENGAN ANTI-BAN & PROGRESS BAR) ===
+progress_bar = st.progress(0)
+status_text = st.empty()
+total_tickers = len(ticker_list)
+
+for i, (ticker, symbol) in enumerate(zip(ticker_list, idx_tickers)):
+    status_text.text(f"Memproses {i+1}/{total_tickers} : Menarik data {ticker}...")
+    
     try:
         df = fetch_data(symbol, period)
         if df.empty:
+            time.sleep(1.5) # Tetap beri jeda meskipun data kosong agar loop selaras
+            progress_bar.progress((i + 1) / total_tickers)
             continue
         
         df = calculate_indicators(df)
@@ -115,6 +124,14 @@ for ticker, symbol in zip(ticker_list, idx_tickers):
             })
     except Exception as e:
         pass # Lewati jika ada error pada ticker tertentu
+        
+    # Jeda 1.5 detik agar aman dari blokir Yahoo Finance
+    time.sleep(1.5)
+    
+    # Update progress bar
+    progress_bar.progress((i + 1) / total_tickers)
+
+status_text.text("✅ Penarikan data selesai!")
 
 # === MENAMPILKAN HASIL SCREENER ===
 if results:
