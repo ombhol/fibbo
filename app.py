@@ -17,7 +17,12 @@ st.markdown("Screener khusus untuk memindai saham yang mendekati level Fibonacci
 st.sidebar.header("Parameter Screener")
 default_tickers = "ACES, ADRO, AKRA, ANTM, AUTO, BRIS, BRMS, BSDE, CMRY, CPIN, CTRA, ELSA, ENRG, ERAA, EXCL, HEAL, HRUM, ICBP, INDY, INDF, INKP, INTP, ITMG, JPFA, JSMR, KLBF, LSIP, MAPI, MDKA, MEDC, MIKA, MNCN, MTEL, PGAS, POWR, PTBA, PWON, SIDO, SMGR, SRTG, SSIA, TAPG, TKIM, TLKM, TPIA, UNTR, UNVR, BUMI"
 tickers_input = st.sidebar.text_input("Daftar Emiten (pisahkan dengan koma):", default_tickers)
-period = st.sidebar.selectbox("Periode Data:", [ "1mo","6mo","1y" ], index=0)
+
+# UPDATE: Pilihan periode diubah menjadi 3 Bulan, 6 Bulan, dan 1 Tahun
+period_map = {"3 Bulan": "3mo", "6 Bulan": "6mo", "1 Tahun": "1y"}
+selected_period_label = st.sidebar.selectbox("Periode Data:", list(period_map.keys()), index=1)
+period = period_map[selected_period_label]
+
 fibo_tolerance = st.sidebar.slider("Toleransi Kedekatan dgn Fibo (%)", 1.0, 5.0, 3.0) / 100.0
 
 # Membersihkan input ticker dan menambahkan suffix .JK untuk bursa Indonesia
@@ -33,16 +38,21 @@ def fetch_data(symbol, period):
 
 def calculate_indicators(df):
     df = df.copy()
-    if df.empty or len(df) < 50:
+    # UPDATE: Batas minimum data diturunkan agar periode 3mo bisa lolos
+    if df.empty or len(df) < 25: 
         return df
     
-    # 1. EMA
+    # 1. EMA (Ditambahkan fallback agar tidak error jika data kurang dari 50 baris)
     df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
-    df['EMA_50'] = df['Close'].ewm(span=50, adjust=False).mean()
+    if len(df) >= 50:
+        df['EMA_50'] = df['Close'].ewm(span=50, adjust=False).mean()
+    else:
+        df['EMA_50'] = df['EMA_20']
     
-    # 2. VWAP (Pendekatan dengan rolling 20 hari untuk tren jangka pendek)
+    # 2. VWAP (Pendekatan dengan rolling 20 hari atau sesuai jumlah data)
+    window_vwap = min(20, len(df))
     typical_price = (df['High'] + df['Low'] + df['Close']) / 3
-    df['VWAP_20d'] = (typical_price * df['Volume']).rolling(20).sum() / df['Volume'].rolling(20).sum()
+    df['VWAP_20d'] = (typical_price * df['Volume']).rolling(window_vwap).sum() / df['Volume'].rolling(window_vwap).sum()
     
     # 3. Fibonacci Retracement (Berdasarkan periode data yang ditarik)
     swing_high = df['High'].max()
@@ -69,8 +79,8 @@ def calculate_indicators(df):
             df.iloc[i, df.columns.get_loc('Bullish_Engulfing')] = True
             
     # 5. Volume Price Analysis (VPA) - Volume Drying Up
-    # Volume mengecil dibanding rata-rata 20 hari saat koreksi
-    df['Vol_SMA_20'] = df['Volume'].rolling(20).mean()
+    window_vol = min(20, len(df))
+    df['Vol_SMA_20'] = df['Volume'].rolling(window_vol).mean()
     df['Vol_Drying'] = df['Volume'] < df['Vol_SMA_20']
     
     return df
